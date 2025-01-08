@@ -5,8 +5,9 @@ const dotenv = require("dotenv");
 dotenv.config();
 const app = express();
 const authRoutes = require("./routes/auth")
-
-
+const boostRoutes = require("./routes//boostincome")
+const orderRoutes = require("./routes/order")
+const portfolioRoutes = require("./routes/portfolio");
 
 app.use(cors({
     origin: '*', // allow any origin
@@ -30,7 +31,7 @@ const connectDb = async () => {
     }
   };
 
-  connectDb();
+connectDb();
 
 
 
@@ -38,7 +39,12 @@ const connectDb = async () => {
 app.get("/", (req, res) => {
     res.send("PAXOWEALTH BACKEND")
 })
+app.use("/api/auth", authRoutes)
+app.use("/api/boostincome", boostRoutes);
+app.use("/api/order", orderRoutes);
+app.use("/api/portfolio", portfolioRoutes);
 
-  app.listen(process.env.PORT, () => {
+
+app.listen(process.env.PORT, () => {
     console.log(`Express server is running on port ${process.env.PORT} `);
   });

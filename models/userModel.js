@@ -1,64 +1,81 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const userSchema = new Schema({
+const userSchema = new Schema(
+  {
     username: {
-        type: String,
-        trim: true,
+      type: String,
+      trim: true,
     },
     phone: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
     },
     email: {
-        type: String,
-        required: true,
-        trim: true,
+      type: String,
+      required: true,
+      trim: true,
     },
     otp: {
-        type: String,
-        required: false,
-        trim: true,
+      type: String,
+      trim: true,
     },
     otpExpiry: {
-  type : Date
+      type: Date,
     },
     role: {
-        type: String,
-        enum: ['user', 'admin'],
-        default: 'user',
-        trim: true,
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+      trim: true,
     },
-    fatherName: {
+    kyc: {
+      panNumber: {
         type: String,
-        trim: true
+        trim: true,
+      },
+      adhaarNumber: {
+        type: String,
+        trim: true,
+      },
+      adhaarFile: {
+        type: String,
+      },
+      panFile: {
+        type: String,
+      },
     },
     age: {
-        type: String,
-        trim: true
+      type: Number,
+      min: 0,
+      trim: true,
     },
     isKycVerified: {
-        type: Boolean,
-        default: false,
+      type: Boolean,
+      default: false,
     },
     user_img: {
-        type: String
+      type: String,
     },
     status: {
-        type: String,
-        enum: ['active', 'inactive'],
-        default: 'active'
+      type: String,
+      enum: ["active", "inactive"],
+      default: "active",
     },
+    loggedInDevice: [
+      {
+        deviceID: { type: String },
+        date: { type: Date },
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
+);
 
-}, { 
-    timestamps: true 
-});
-
-
-
-
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 module.exports = User;

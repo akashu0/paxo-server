@@ -9,6 +9,7 @@ const authControllers = require("../controllers/authcontroller")
 
 router.post("/login" ,authControllers.sendLoginOtp)
 router.post("/verify-otp" ,authControllers.loginVerify)
+router.post('/register', authControllers.createUser);
 
 
 
