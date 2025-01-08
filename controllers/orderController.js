@@ -1,7 +1,7 @@
 const Order = require("../models/order");
 
 // Create Order
-exports.createOrder = async (req, res) => {
+const createOrder = async (req, res) => {
   try {
     const order = new Order(req.body);
     await order.save();
@@ -12,7 +12,7 @@ exports.createOrder = async (req, res) => {
 };
 
 // Get All Orders
-exports.getAllOrders = async (req, res) => {
+const getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate("product_id")
@@ -24,7 +24,7 @@ exports.getAllOrders = async (req, res) => {
 };
 
 // Get Order by ID
-exports.getOrderById = async (req, res) => {
+const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
       .populate("product_id")
@@ -39,7 +39,7 @@ exports.getOrderById = async (req, res) => {
 };
 
 // Update Order
-exports.updateOrder = async (req, res) => {
+const updateOrder = async (req, res) => {
   try {
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -55,7 +55,7 @@ exports.updateOrder = async (req, res) => {
 };
 
 // Delete Order
-exports.deleteOrder = async (req, res) => {
+const deleteOrder = async (req, res) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.id);
     if (!order) {
@@ -66,3 +66,12 @@ exports.deleteOrder = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+module.exports = {
+  createOrder,
+  deleteOrder,
+  updateOrder,
+  getOrderById,
+  getAllOrders
+
+}

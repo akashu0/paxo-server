@@ -14,6 +14,8 @@ exports.createBoostIncome = async (req, res) => {
 // Get all BoostIncome records
 exports.getAllBoostIncome = async (req, res) => {
   try {
+    console.log("cliclked");
+    
     const boostIncomeRecords = await BoostIncome.find();
     res.status(200).json(boostIncomeRecords);
   } catch (error) {

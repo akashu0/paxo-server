@@ -49,8 +49,10 @@ const sendLoginOtp = async(req,res) => {
 const loginVerify = async(req,res) => {
     const { phone, otp } = req.body;
 
+
     // Find the user by phone and OTP
     const user = await User.findOne({ phone, otp }).select("-password")
+
     if (!user) {
       return res.status(400).json({ message: 'Invalid OTP' });
     }
@@ -62,7 +64,7 @@ const loginVerify = async(req,res) => {
     // Generate JWT token
     const token = generateToken(user);
   
-    res.status(200).json({ message: 'User logged in successfully', user, token });
+    res.status(200).json({ message: 'User logged in successfully', name:user.username, token });
 }
 
 const createUser = async (req, res) => {
@@ -100,9 +102,42 @@ const createUser = async (req, res) => {
   }
 }
 
+// Update KYC details with file uploads
+const updateKycDetails = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { panNumber, adhaarNumber } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update KYC fields
+    if (panNumber) user.kyc.panNumber = panNumber;
+    if (adhaarNumber) user.kyc.adhaarNumber = adhaarNumber;
+
+    // Update file paths if files are uploaded
+    if (req.files) {
+      if (req.files.adhaarFile) {
+        user.kyc.adhaarFile = req.files.adhaarFile[0].path;
+      }
+      if (req.files.panFile) {
+        user.kyc.panFile = req.files.panFile[0].path;
+      }
+    }
+
+    user.isKycVerified= true
+    await user.save();
+    res.status(200).json({ message: "KYC details updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 module.exports = {
     sendLoginOtp,
     loginVerify,
-    createUser
+    createUser,
+    updateKycDetails
   }

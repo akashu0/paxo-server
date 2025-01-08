@@ -20,7 +20,7 @@ const orderSchema = new Schema({
     type: Number,
     required: true,
   },
-  total_price: {
+  total_investment: {
     type: Number,
     required: true,
   },
