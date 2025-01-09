@@ -32,7 +32,7 @@ const sendLoginOtp = async(req,res) => {
   
     // Send OTP using Twilio
     try {
-      // await sendOtp(phone, otp);
+      await sendOtp(phone, otp);
   
       // Update user with OTP
       user.otp = otp;
@@ -51,7 +51,7 @@ const loginVerify = async(req,res) => {
 
 
     // Find the user by phone and OTP
-    const user = await User.findOne({ phone, otp }).select("-password")
+    const user = await User.findOne({ phone, otp })
 
     if (!user) {
       return res.status(400).json({ message: 'Invalid OTP' });
@@ -59,6 +59,28 @@ const loginVerify = async(req,res) => {
   
     // Verify user
     user.otp = undefined; // Remove OTP after verification
+    await user.save();
+  
+    // Generate JWT token
+    const token = generateToken(user);
+  
+    res.status(200).json({ message: 'User logged in successfully', name:user.username, token });
+}
+
+const registerVerify = async(req,res) => {
+    const { phone, otp } = req.body;
+
+
+    // Find the user by phone and OTP
+    const user = await User.findOne({ phone, otp })
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+  
+    // Verify user
+    user.otp = undefined; // Remove OTP after verification
+    user.status= "active"
     await user.save();
   
     // Generate JWT token
@@ -79,12 +101,11 @@ const createUser = async (req, res) => {
   // Generate OTP
   const otp = generateOtp();
 
-  console.log(otp,"otp");
   
 
   // Send OTP using Twilio
 
-    // await sendOtp(phone, otp);
+    await sendOtp(phone, otp);
 
     // Create a new user with OTP (without saving yet)
     const user = new User({
@@ -92,6 +113,7 @@ const createUser = async (req, res) => {
       phone,
       email,
       otp,
+      status: "inactive"
     });
 
     await user.save();
@@ -139,5 +161,6 @@ module.exports = {
     sendLoginOtp,
     loginVerify,
     createUser,
-    updateKycDetails
+    updateKycDetails,
+    registerVerify
   }

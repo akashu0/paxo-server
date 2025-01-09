@@ -34,6 +34,7 @@ const storage = multer.diskStorage({
 router.post("/login" ,authControllers.sendLoginOtp)
 router.post("/verify-otp" ,authControllers.loginVerify)
 router.post('/register', authControllers.createUser);
+router.post('/register-verify', authControllers.registerVerify);
 
 router.put("/kyc/:userId",upload.fields([{ name: "adhaarFile", maxCount: 1 },{ name: "panFile", maxCount: 1 },]),authControllers.updateKycDetails);
 
