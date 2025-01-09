@@ -70,6 +70,24 @@ const userSchema = new Schema(
         date: { type: Date },
       },
     ],
+    bankDetails: {
+      accountHolderName: {
+        type: String,
+        trim: true,
+      },
+      accountNumber: {
+        type: String,
+        trim: true,
+      },
+      ifscCode: {
+        type: String,
+        trim: true,
+      },
+      bankName: {
+        type: String,
+        trim: true,
+      },
+    },
   },
   {
     timestamps: true,
