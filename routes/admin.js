@@ -4,8 +4,7 @@ const { adminVerify, checkPermission } = require("../middlewares/admin");
 
 const adminControllers = require("../controllers/adminController");
 
-// router.post('/create-admin-user', adminVerify, checkPermission("role", "create"),adminControllers.createAdmin);
-router.post('/create-admin-user',adminControllers.createAdmin);
+router.post('/create-admin-user', adminVerify, checkPermission("role", "create"),adminControllers.createAdmin);
 
 
 router.post('/admin-login',adminControllers.adminLogin);

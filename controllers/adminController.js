@@ -5,13 +5,13 @@ const bcrypt = require('bcryptjs');
 
 
 
-const { adminVerify, checkPermission} = require("../middlewares/admin");
 
 
 const Role = require("../models/role");
-const Admin = require("../models/admin")
+const Admin = require("../models/admin");
+const { formatDate } = require('../utils/formatDate');
 
-const secretKey = process.env.JWT_SECRET_KEY;
+const secretKey = process.env.JWT_SECRET;
 
 const createAdmin = async (req, res) => {
     try {

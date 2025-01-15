@@ -1,16 +1,11 @@
 const mongoose = require("mongoose");
 const slugify = require("slugify");
 
-const boostincomeSchema = new mongoose.Schema(
+const propertySchema = new mongoose.Schema(
   {
-    categoryName: {type: String},
     property_name: { type: String,trim: true,required: true},
+    
     property_type: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    property_owner: {
       type: String,
       trim: true,
       required: true,
@@ -30,6 +25,10 @@ const boostincomeSchema = new mongoose.Schema(
     available_unit: {
       type: Number,
       required: true,
+    },
+    demand: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
     },
     property_location: {
       type: String,
@@ -74,18 +73,28 @@ const boostincomeSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
+    serviceType: {
+      type: String,
+      enum: ['BoostIncome', 'DirectSave', 'RentLease'],
+      required: true
+    },
+    category: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Category',
+      required: true
+    },
   },
   { timestamps: true }
 );
 
 // Pre-save middleware to generate slug
-boostincomeSchema.pre("save", function (next) {
+propertySchema.pre("save", function (next) {
   if (this.isModified("property_name")) {
     this.slug = slugify(this.property_name, { lower: true, strict: true });
   }
   next();
 });
 
-const BoostIncome = mongoose.model("BoostIncome", boostincomeSchema);
+const Property = mongoose.model("Property", propertySchema);
 
-module.exports = BoostIncome;
+module.exports = Property;

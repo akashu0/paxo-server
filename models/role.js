@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
 const permissionSchema = new mongoose.Schema({
-    product: [{ type: String }],
-    category: [{ type: String }],
-    brand: [{ type: String }],
+    properties: [{ type: String }],
+    order: [{ type: String }],
+    legal: [{ type: String }],
     logs: [{ type: String }],
     enquiry: [{ type: String }],
     user: [{ type: String }],

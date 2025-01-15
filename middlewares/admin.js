@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 dotenv.config();
-const secretKey = process.env.JWT_SECRET_KEY;
+const secretKey = process.env.JWT_SECRET;
 const Admin = require('../models/admin');
 
 
@@ -42,25 +42,33 @@ const adminVerify = async (req, res, next) => {
 
 const checkPermission = (module, action) => {
     return async (req, res, next) => {
-        try {
-            // Your permission checking logic here
-            const admin = await Admin.findById(req.user.id).populate("userRole");
-            if (!admin) {
-                return res.status(404).json({ error: "User not found" });
-            }
-
-            const permissions = admin.userRole.permissions[module];
-            if (!permissions || !permissions.includes(action)) {
-                return res.status(403).json({ error: "Access denied" });
-            }
-
-            next();
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ error: "Internal server error" });
+      try {
+        // Fetch the admin and their role
+        const admin = await Admin.findById(req.user.id).populate("userRole");
+        if (!admin) {
+          return res.status(404).json({ error: "User not found" });
         }
+  
+        // Check if the user has the RootAdmin role
+        if (admin.userRole.name === "RootAdmin") {
+          return next(); // Skip permission checks for RootAdmin
+        }
+  
+        // Check permissions for other roles
+        const permissions = admin.userRole.permissions[module];
+        if (!permissions || !permissions.includes(action)) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+  
+        // Proceed to the next middleware or route handler
+        next();
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: "Internal server error" });
+      }
     };
-};
+  };
+  
 
 
 

@@ -4,7 +4,7 @@ const { adminVerify, checkPermission } = require("../middlewares/admin");
 const { createRole,editPermission , searchRole, viewRole,deleteRole,getRoleAdminUser} = require("../controllers/roleController")
 
 
-router.post('/create',createRole);
+router.post('/create',adminVerify,checkPermission("role", "create"),createRole);
 
 router.put('/edit-permissions/:id', adminVerify, checkPermission("role", "edit"), editPermission);
 

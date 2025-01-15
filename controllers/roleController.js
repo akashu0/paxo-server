@@ -38,7 +38,7 @@ const createRole = async (req, res) => {
   
       try {
           if (!searchQuery) {
-              const roles = await Role.find({ name: { $ne: "ROOT" } }).select('name');
+              const roles = await Role.find({ name: { $ne: "ROOT" } }).select('name permissions');
               return res.status(200).json({ roles });
           }
   
@@ -49,8 +49,11 @@ const createRole = async (req, res) => {
           if (roles.length === 0) {
               return res.status(404).json({ message: 'No roles found' });
           }
+
+          console.log(roles);
+          
   
-          res.status(200).json({ roles });
+          res.status(200).json(roles);
       } catch (error) {
           console.error(error);
           res.status(500).json({ error: 'Server Error' });

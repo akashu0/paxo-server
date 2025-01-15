@@ -5,9 +5,13 @@ const dotenv = require("dotenv");
 dotenv.config();
 const app = express();
 const authRoutes = require("./routes/auth")
-const boostRoutes = require("./routes//boostincome")
-const orderRoutes = require("./routes/order")
+const propertyRoutes = require("./routes/propertyRoutes")
+const categoryRoutes = require("./routes/categoryRoutes")
+const orderRoutes = require("./routes/orderRoutes")
 const portfolioRoutes = require("./routes/portfolio");
+const adminRoutes = require("./routes/admin");
+const roleRoutes = require("./routes/role");
+const legalRoutes = require("./routes/legalDocumentRoutes");
 
 app.use(cors({
     origin: '*', // allow any origin
@@ -40,9 +44,14 @@ app.get("/", (req, res) => {
     res.send("PAXOWEALTH BACKEND")
 })
 app.use("/api/auth", authRoutes)
-app.use("/api/boostincome", boostRoutes);
+app.use("/api/admin", adminRoutes)
+app.use("/api/property", propertyRoutes);
+app.use("/api/category", categoryRoutes);
 app.use("/api/order", orderRoutes);
 app.use("/api/portfolio", portfolioRoutes);
+app.use("/api/role", roleRoutes);
+app.use("/api/legal", legalRoutes);
+
 
 
 app.listen(process.env.PORT, () => {
