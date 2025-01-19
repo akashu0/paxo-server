@@ -50,7 +50,7 @@ const checkPermission = (module, action) => {
         }
   
         // Check if the user has the RootAdmin role
-        if (admin.userRole.name === "RootAdmin") {
+        if (admin.userRole.name === "rootadmin") {
           return next(); // Skip permission checks for RootAdmin
         }
   

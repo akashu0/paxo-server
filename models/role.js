@@ -8,6 +8,8 @@ const permissionSchema = new mongoose.Schema({
     enquiry: [{ type: String }],
     user: [{ type: String }],
     role: [{ type: String }],
+    category: [{ type: String }],
+    prelistedBuyer: [{ type: String }],
   
 }, { _id: false });
 

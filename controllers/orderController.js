@@ -2,6 +2,7 @@ const Order = require("../models/order");
 const MonthlyPayout = require('../models/monthlypayout');
 const LegalDocument = require('../models/legalDocument');
 const Property = require("../models/property")
+const PDFDocument = require('pdfkit');
 
 
 exports.createOrder = async (req, res) => {
@@ -92,7 +93,7 @@ exports.getConfirmedUserOrders = async (req, res) => {
       user: userId,
       orderStatus: 'confirmed',
       paymentStatus: 'completed',
-    }).sort({ createdAt: -1 });
+    }).sort({ createdAt: -1 }).populate("property")
 
     // Respond with the filtered orders
     res.status(200).json({ success: true, orders });
@@ -293,5 +294,113 @@ exports.verifyPayment = async (req, res) => {
     });
   }
 };
+
+
+exports.downloadPaymentSlip = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+
+    // Find the order and populate necessary fields
+    const order = await Order.findById(orderId)
+      .populate('property', 'property_name property_location property_unit_price')
+      .populate('user', 'username email');
+
+    // Validation checks
+    if (!order) {
+      return res.status(404).json({ success: false, message: "Order not found" });
+    }
+
+    if (order.orderStatus !== 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: "Payment slip is only available for confirmed orders"
+      });
+    }
+
+    // Create PDF document
+    const doc = new PDFDocument({
+      size: 'A4',
+      margin: 50
+    });
+
+    // Set response headers for PDF download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=payment-slip-${orderId}.pdf`);
+
+    // Pipe the PDF to the response
+    doc.pipe(res);
+
+    // Add company logo or header
+    doc.fontSize(20).text('Payment Slip', { align: 'center' });
+    doc.moveDown();
+
+    // Add order details
+    doc.fontSize(12);
+    doc.text(`Order ID: ${order._id}`);
+    doc.text(`Date: ${new Date(order.createdAt).toLocaleDateString()}`);
+    doc.moveDown();
+
+    // Customer details
+    doc.fontSize(14).text('Customer Details', { underline: true });
+    doc.fontSize(12);
+    doc.text(`Name: ${order.user.username}`);
+    doc.text(`Email: ${order.user.email}`);
+    doc.moveDown();
+
+    // Property details
+    doc.fontSize(14).text('Property Details', { underline: true });
+    doc.fontSize(12);
+    doc.text(`Property: ${order.property.property_name}`);
+    doc.text(`Location: ${order.property.property_location}`);
+    doc.text(`Units: ${order.units}`);
+    doc.moveDown();
+
+    // Payment details
+    doc.fontSize(14).text('Payment Details', { underline: true });
+    doc.fontSize(12);
+    doc.text(`Payment Method: ${order.paymentDetails.method}`);
+    doc.text(`Transaction ID: ${order.paymentDetails.transactionId}`);
+    doc.text(`Payment Date: ${order.paymentDetails.paymentDate}`);
+    doc.text(`Paid Amount: ${order.paymentDetails.paidAmount}`);
+    doc.moveDown();
+
+    // Price breakdown
+    doc.fontSize(14).text('Price Breakdown', { underline: true });
+    doc.fontSize(12);
+    doc.text(`Total Area: ${order.priceDetails.totalArea} sq ft`);
+    doc.text(`Base Amount: ${order.priceDetails.baseAmount}`);
+    doc.text(`Tax Amount: ${order.priceDetails.taxAmount}`);
+    doc.text(`Total Amount: ${order.totalAmount}`);
+    doc.text(`Monthly Earnings: ${order.priceDetails.monthlyEarnings}`);
+    doc.text(`Capital Appreciation: ${order.priceDetails.capitalAppreciation}`);
+    doc.moveDown();
+
+    // Add payment proof image if exists
+    if (order.paymentDetails.paymentProof) {
+      doc.addPage();
+      doc.fontSize(14).text('Payment Proof', { underline: true });
+      try {
+        doc.image(order.paymentDetails.paymentProof, {
+          fit: [500, 700],
+          align: 'center'
+        });
+      } catch (error) {
+        console.error('Error adding payment proof image:', error);
+      }
+    }
+
+    // Finalize the PDF
+    doc.end();
+
+  } catch (error) {
+    console.error('Error generating PDF:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error generating PDF",
+      error: error.message
+    });
+  }
+};
+
 
 

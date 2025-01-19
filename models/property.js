@@ -63,7 +63,20 @@ const propertySchema = new mongoose.Schema(
     isActive: {
       type: String,
       enum: ["active", "inactive", "deleted"],
-      default: "active",
+      default: "inactive",
+    },
+    approvalStatus: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending'
+    },
+    
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin'
+    },
+    approvedAt: {
+      type: Date
     },
     survey_no: {
       type: String,
@@ -81,6 +94,11 @@ const propertySchema = new mongoose.Schema(
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
+      required: true
+    },
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
       required: true
     },
   },

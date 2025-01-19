@@ -17,7 +17,7 @@ router.post('/', adminVerify, legalDocumentController.createLegalDocument);
 router.post('/upload-legal-document/:id', adminVerify, legalDocumentController.uploadDocument);
 
 // Add remark to document
-router.post('/:id/remarks', adminVerify, legalDocumentController.addRemark);
+router.post('/legal-remark/:id', adminVerify, legalDocumentController.addRemark);
 
 // Update document status
 router.patch('/update-status/:id', adminVerify, legalDocumentController.updateDocumentStatus);

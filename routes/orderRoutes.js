@@ -39,6 +39,7 @@ router.post('/create-order',userVerify,upload.single('paymentProof'),  orderCont
 router.get('/my-orders', userVerify, orderController.getUserOrders);
 router.get('/my-confirm-orders', userVerify, orderController.getConfirmedUserOrders);
 router.get('/order-detail/:id', orderController.getOrderById);
+router.get('/download-payment-slip/:orderId', orderController.downloadPaymentSlip);
 
 
 // Admin routes

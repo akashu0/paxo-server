@@ -17,7 +17,7 @@ const storage = multer.diskStorage({
   const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
-      const allowedTypes = ['.pdf', '.doc', '.docx'];
+      const allowedTypes = ['.pdf', '.doc', '.docx',".png"];
       const ext = path.extname(file.originalname).toLowerCase();
       if (allowedTypes.includes(ext)) {
         cb(null, true);
@@ -35,8 +35,8 @@ const storage = multer.diskStorage({
 exports.getAllLegalDocuments = async (req, res) => {
     try {
       const documents = await LegalDocument.find({ isActive: 'active' })
-        .populate('order', 'orderNumber orderStatus')
-        .populate('property', 'property_name property_location')
+        .populate('order', 'orderNumber orderStatus ')
+        .populate('property', 'property_name property_location ')
         .populate('assignedTo', 'name email');
       
       res.json(documents);
