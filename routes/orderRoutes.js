@@ -38,8 +38,10 @@ const storage = multer.diskStorage({
 router.post('/create-order',userVerify,upload.single('paymentProof'),  orderController.createOrder);
 router.get('/my-orders', userVerify, orderController.getUserOrders);
 router.get('/my-confirm-orders', userVerify, orderController.getConfirmedUserOrders);
-router.get('/order-detail/:id', orderController.getOrderById);
-router.get('/download-payment-slip/:orderId', orderController.downloadPaymentSlip);
+router.get('/order-detail/:id',userVerify, orderController.getOrderById);
+router.get('/download-payment-slip/:orderId',userVerify, orderController.downloadPaymentSlip);
+
+router.get('/download-order-paymentslip/:orderId',userVerify, orderController.downloadOrderPaymentSlip);
 
 
 // Admin routes

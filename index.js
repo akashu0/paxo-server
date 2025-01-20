@@ -12,6 +12,7 @@ const portfolioRoutes = require("./routes/portfolio");
 const adminRoutes = require("./routes/admin");
 const roleRoutes = require("./routes/role");
 const legalRoutes = require("./routes/legalDocumentRoutes");
+const payoutRoutes = require("./routes/payout")
 
 app.use(cors({
     origin: '*', // allow any origin
@@ -51,6 +52,7 @@ app.use("/api/order", orderRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/role", roleRoutes);
 app.use("/api/legal", legalRoutes);
+app.use("/api/payout", payoutRoutes);
 
 
 

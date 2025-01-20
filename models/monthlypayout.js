@@ -8,6 +8,18 @@ function getNextFifthDate(previousDate) {
   return date;
 }
 
+function calculateMonthlyPayment(totalAmount, capitalAppreciation) {
+  const baseAmount = Number(totalAmount);
+  const appreciationRate = Number(capitalAppreciation);
+
+  const appreciatedValue = (baseAmount * appreciationRate) / 100;
+
+  const monthlyBasePayment = appreciatedValue / 12;
+
+  return String(Math.ceil(monthlyBasePayment));
+}
+
+
 const monthlyPayoutSchema = new mongoose.Schema(
   {
     order: {
@@ -24,28 +36,45 @@ const monthlyPayoutSchema = new mongoose.Schema(
       type: Date,
       required: true
     },
-    baseAmount: {
-      type: String,
-      required: true
+    totalAmount: {
+      amount: {
+        type: String,
+        required: true,
+      },
+      taxes: {
+        type: String,
+        required: true,
+      },
     },
     totalMonths: {
       type: String,
-      default: "18"
+      default: "12"
+    },
+    capitalAppreciation: {
+      type: String,
+      required: true
+    },
+    appreciatedValue: {  
+      type: String,
     },
     payment_structure: [{
       previous_payment: {
         type: Date,
-        default: Date.now
+        default: null
       },
       next_payment: {
         type: Date,
         default: function() {
-          return getNextFifthDate(this.previous_payment);
+          return getNextFifthDate(this.previous_payment || new Date());
         }
       },
       paid_amount: {
         type: String,
         default: "0"
+      },
+      expected_amount: {
+        type: String,
+        required: true
       },
       status: {
         type: String,
@@ -70,65 +99,76 @@ const monthlyPayoutSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Pre-save middleware to initialize payment structure for 18 months
+// Pre-save middleware to initialize payment structure for 12 months
 monthlyPayoutSchema.pre('save', function(next) {
   if (this.isNew) {
+    // Calculate appreciated value
+    const baseAmount = Number(this.totalAmount.amount);
+    const appreciationRate = Number(this.capitalAppreciation);
+    this.appreciatedValue = String((baseAmount * appreciationRate / 100).toFixed(2));
+    
+    // Calculate monthly payment amount including taxes
+    const monthlyPayment = calculateMonthlyPayment(
+      this.totalAmount.amount,
+      this.capitalAppreciation
+    );
+
     const startDate = new Date(this.startDate);
     let currentDate = new Date(startDate);
     currentDate.setDate(5); // Set to 5th of the month
 
-    // Initialize payment structure for 18 months
-    this.payment_structure = Array.from({ length: 18 }, () => {
+    // Initialize payment structure for 12 months
+    this.payment_structure = Array.from({ length: 12 }, (_, index) => {
       const payment = {
-        previous_payment: new Date(currentDate),
+        previous_payment: index === 0 ? null : new Date(currentDate),
         next_payment: getNextFifthDate(currentDate),
         paid_amount: "0",
+        expected_amount: monthlyPayment,
         status: "unpaid",
       };
       currentDate = new Date(payment.next_payment);
       return payment;
     });
 
-    // Set end date to 18 months from start
     const endDate = new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + 18);
+    endDate.setMonth(endDate.getMonth() + 12);
     this.endDate = endDate;
   }
   next();
 });
 
-// Method to calculate next month's payout amount
+// Rest of the methods remain the same
 monthlyPayoutSchema.methods.calculateNextPayout = function() {
   const currentPayment = this.payment_structure.find(p => p.status === "unpaid");
   if (currentPayment) {
-    const principal = Number(this.baseAmount);
-    const rate = Number(currentPayment.capital_appreciation.rate);
-    const monthlyInterest = (principal * rate) / 1200;
-    return String(monthlyInterest.toFixed(2));
+    return currentPayment.expected_amount;
   }
   return "0";
 };
 
-// Method to update payment status
 monthlyPayoutSchema.methods.markPaymentAsPaid = async function(paymentIndex, transactionDetails) {
   if (this.payment_structure[paymentIndex]) {
     const payment = this.payment_structure[paymentIndex];
     payment.status = "paid";
-    payment.paid_amount = this.calculateNextPayout();
+    payment.paid_amount = payment.expected_amount;
     payment.transaction_details = {
       ...transactionDetails,
       processedAt: new Date()
     };
+
+    if (this.payment_structure[paymentIndex + 1]) {
+      this.payment_structure[paymentIndex + 1].previous_payment = new Date();
+    }
+
     await this.save();
     return true;
   }
   return false;
 };
 
-// Static method to get all pending payments for current month
 monthlyPayoutSchema.statics.getPendingPayments = async function() {
   const currentDate = new Date();
-  currentDate.setDate(5); // 5th of current month
+  currentDate.setDate(5);
 
   return this.find({
     isActive: "active",
@@ -143,7 +183,6 @@ monthlyPayoutSchema.statics.getPendingPayments = async function() {
   }).populate('user order');
 };
 
-// Static method to get upcoming payments
 monthlyPayoutSchema.statics.getUpcomingPayments = async function(userId) {
   const query = { isActive: "active" };
   if (userId) {

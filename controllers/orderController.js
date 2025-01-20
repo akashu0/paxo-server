@@ -4,6 +4,7 @@ const LegalDocument = require('../models/legalDocument');
 const Property = require("../models/property")
 const PDFDocument = require('pdfkit');
 
+const receiptService = require('../services/receiptService');
 
 exports.createOrder = async (req, res) => {
   
@@ -226,7 +227,10 @@ exports.verifyPayment = async (req, res) => {
     const order = await Order.findById(orderId).populate('property');
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
+
+      
     }
+
 
     order.paymentDetails.verificationStatus = verificationStatus;
     order.paymentDetails.verificationNotes = verificationNotes;
@@ -242,7 +246,12 @@ exports.verifyPayment = async (req, res) => {
         order: order._id,
         user: order.user,
         startDate: new Date(),
-        baseAmount: order.totalAmount,
+        totalAmount: {
+          amount: order.priceDetails.baseAmount,
+          taxes: order.priceDetails.taxAmount,      
+        },
+
+        capitalAppreciation:order.property.capital_appreciation,
         payment_structure: [] 
       });
       await payout.save();
@@ -403,4 +412,70 @@ exports.downloadPaymentSlip = async (req, res) => {
 };
 
 
+
+/**
+ * @route GET /api/orders/:orderId/receipt
+ * @description Generate and download payment receipt for a verified order
+ * @access Private
+ */
+exports.downloadOrderPaymentSlip =  async (req, res) => {
+  try {
+    // Find the order and populate necessary fields
+    const order = await Order.findById(req.params.orderId)
+      .populate('property')
+      .populate('user');
+
+    // Check if order exists
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    // Verify order status and payment
+    if (order.paymentStatus !== 'completed' || 
+        order.paymentDetails.verificationStatus !== 'verified') {
+      return res.status(400).json({ 
+        message: 'Receipt is only available for verified and completed payments' 
+      });
+    }
+
+    // Prepare data for the receipt
+    const receiptData = {
+      orderId: order._id,
+      customerName: order.user.name,
+      customerEmail: order.user.email,
+      customerPhone: order.user.phone,
+      propertyName: order.property.property_name,
+      propertyType: order.property.property_type,
+      location: order.property.location,
+      capitalAppreciation: order.property.capital_appreciation,
+      monthlyEarnings: order.priceDetails.monthlyEarnings,
+      totalAmount: order.totalAmount,
+      baseAmount: order.priceDetails.baseAmount,
+      taxAmount: order.priceDetails.taxAmount,
+      paymentMethod: order.paymentDetails.method,
+      transactionId: order.paymentDetails.transactionId,
+      paymentDate: new Date(order.paymentDetails.paymentDate).toLocaleDateString('en-IN')
+    };
+
+    // Generate PDF
+    const pdfBuffer = await receiptService.generateReceipt(receiptData);
+
+    // Set response headers
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition', 
+      `attachment; filename=receipt-PW-${order._id.toString().slice(-6).toUpperCase()}.pdf`
+    );
+
+    // Send PDF
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error('Error generating receipt:', error);
+    res.status(500).json({ 
+      message: 'Error generating receipt', 
+      error: error.message 
+    });
+  }
+}
 
