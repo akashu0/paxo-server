@@ -19,55 +19,83 @@ function generateOtp() {
     return jwt.sign(payload, secret);
 };
 
-const sendLoginOtp = async(req,res) => {
+const sendLoginOtp = async (req, res) => {
+  const { phone } = req.body;
 
-    const { phone } = req.body;
-
-    // Check if user exists
-    const user = await User.findOne({ phone });
-    if (!user) {
-      return res.status(400).json({ message: 'User with this phone number does not exist. Please register first.' });
-    }
-  
-    // Generate OTP
-    const otp = generateOtp();
-  
-    // Send OTP using Twilio
-    try {
-      await sendOtp(phone, otp);
-  
-      // Update user with OTP
-      user.otp = otp;
-      await user.save();
-      res.status(200).json({ message: 'OTP sent successfully' });
-    } catch (error) {
-      res.status(500).json({ message: 'Failed to send OTP', error });
-      console.log(error.message);
-    }
-
+  // Check for dummy test login
+  if (phone === "1212121212") {
+    return res.status(200).json({ message: "Login successful for dummy test user" });
   }
 
+  // Check if user exists
+  const user = await User.findOne({ phone });
+  if (!user) {
+    return res
+      .status(400)
+      .json({ message: "User with this phone number does not exist. Please register first." });
+  }
 
-const loginVerify = async(req,res) => {
-    const { phone, otp } = req.body;
+  // Generate OTP
+  const otp = generateOtp();
 
+  // Send OTP using Twilio
+  try {
+    await sendOtp(phone, otp);
 
-    // Find the user by phone and OTP
-    const user = await User.findOne({ phone, otp })
-
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid OTP' });
-    }
-  
-    // Verify user
-    user.otp = undefined; // Remove OTP after verification
+    // Update user with OTP
+    user.otp = otp;
     await user.save();
-  
-    // Generate JWT token
-    const token = generateToken(user);
-  
-    res.status(200).json({ message: 'User logged in successfully', name:user.username, token });
-}
+    res.status(200).json({ message: "OTP sent successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to send OTP", error });
+    console.log(error.message);
+  }
+};
+
+
+const loginVerify = async (req, res) => {
+  const { phone, otp } = req.body;
+
+  // Check for dummy test login
+  if (phone === "1212121212") {
+    // Fetch the dummy user from the database
+    const dummyUser = await User.findOne({ phone });
+
+    if (!dummyUser) {
+      return res.status(400).json({ message: "Dummy user not found in the database" });
+    }
+
+    // Generate JWT token for the dummy user
+    const token = generateToken(dummyUser);
+
+    return res.status(200).json({
+      message: "Dummy user logged in successfully",
+      name: dummyUser.username,
+      token,
+    });
+  }
+
+  // Find the user by phone and OTP
+  const user = await User.findOne({ phone, otp });
+
+  if (!user) {
+    return res.status(400).json({ message: "Invalid OTP" });
+  }
+
+  // Verify user
+  user.otp = undefined; // Remove OTP after verification
+  await user.save();
+
+  // Generate JWT token
+  const token = generateToken(user);
+
+  res.status(200).json({
+    message: "User logged in successfully",
+    name: user.username,
+    token,
+  });
+};
+
 
 const registerVerify = async(req,res) => {
     const { phone, otp } = req.body;
