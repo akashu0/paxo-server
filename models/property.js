@@ -45,12 +45,20 @@ const propertySchema = new mongoose.Schema(
       trim: true,
       required: true,
     },
+    minimum_sqft: {  // Added new field
+      type: String,
+      required: true,
+      trim: true
+    },
     capital_appreciation: {
       type: String,
       trim: true,
       required: true,
     },
     property_img: {
+      type: String,
+    },
+    property_owner: {
       type: String,
     },
     marketValue: {

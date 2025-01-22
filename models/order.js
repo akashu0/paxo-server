@@ -25,7 +25,8 @@ const orderSchema = new mongoose.Schema(
       taxAmount: String,
       monthlyEarnings: String,
       pricePerUnit: String,
-      capitalAppreciation: String
+      capitalAppreciation: String,
+      minimum_sqft: String  // Added minimum_sqft field
     },
     orderStatus: {
       type: String,
@@ -91,17 +92,20 @@ orderSchema.pre("save", async function(next) {
         throw new Error('Property not found');
       }
 
-      // Calculate all values using the provided formula
-      const totalArea = Number(this.units) * 100;
-      const totalPrice = Number(this.units) * Number(property.property_unit_price) * 100;
+      // Calculate total area using minimum_sqft
+      const totalArea = Number(this.units) * Number(property.minimum_sqft);
+      const totalPrice = Number(this.units) * Number(property.property_unit_price) * Number(property.minimum_sqft);
       const taxes = Math.ceil(totalPrice * 0.05); // 5% taxes
       const monthlyEarnings = property.capital_appreciation ? 
         Math.ceil(((property.capital_appreciation / 100) * totalPrice) / 12) : 0;
 
+      // Calculate available units based on total area and minimum_sqft
+      const updatedAvailableUnits = Math.floor(totalArea / Number(property.minimum_sqft));
+
       // Set total amount including tax
       this.totalAmount = String(totalPrice + taxes);
       
-      // Store all calculated details
+      // Store all calculated details including minimum_sqft
       this.priceDetails = {
         totalArea: String(totalArea),
         baseAmount: String(totalPrice),
@@ -109,12 +113,18 @@ orderSchema.pre("save", async function(next) {
         monthlyEarnings: String(monthlyEarnings),
         pricePerUnit: String(property.property_unit_price),
         capitalAppreciation: property.capital_appreciation ? 
-          String(property.capital_appreciation) + '%' : '0%'
+          String(property.capital_appreciation) + '%' : '0%',
+        minimum_sqft: property.minimum_sqft
       };
       
-      if (Number(this.units) > Number(property.available_unit)) {
+      if (Number(this.units) > updatedAvailableUnits) {
         throw new Error('Not enough units available');
       }
+
+      // Update property's available units
+      property.available_unit = String(Number(property.available_unit) - Number(this.units));
+      await property.save();
+
     } catch (error) {
       return next(error);
     }
@@ -128,11 +138,35 @@ orderSchema.post("save", async function() {
     try {
       const property = await mongoose.model('Property').findById(this.property);
       if (property) {
-        property.available_unit = String(Number(property.available_unit) - Number(this.units));
+        // Calculate available units based on total area and minimum_sqft
+        const totalArea = Number(this.units) * Number(property.minimum_sqft);
+        const updatedAvailableUnits = Math.floor(totalArea / Number(property.minimum_sqft));
+        
+        property.available_unit = String(Number(property.available_unit) - updatedAvailableUnits);
         await property.save();
       }
     } catch (error) {
       console.error('Error updating property available units:', error);
+    }
+  }
+});
+
+// Post-update middleware to handle status changes
+orderSchema.post("findOneAndUpdate", async function() {
+  const docToUpdate = await this.model.findOne(this.getQuery());
+  if (docToUpdate && docToUpdate.orderStatus === 'confirmed') {
+    try {
+      const property = await mongoose.model('Property').findById(docToUpdate.property);
+      if (property) {
+        // Calculate available units based on total area and minimum_sqftx1q
+        const totalArea = Number(docToUpdate.units) * Number(property.minimum_sqft);
+        const updatedAvailableUnits = Math.floor(totalArea / Number(property.minimum_sqft));
+        
+        property.available_unit = String(Number(property.available_unit) - updatedAvailableUnits);
+        await property.save();
+      }
+    } catch (error) {
+      console.error('Error updating property available units after status change:', error);
     }
   }
 });

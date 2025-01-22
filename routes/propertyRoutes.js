@@ -17,6 +17,11 @@ router.patch(
     checkPermission("property", "edit"),
     propertyController.updatePropertyStatus
   );
-
+router.delete(
+    "/delete-property/:propertyId",
+    adminVerify,
+    checkPermission("property", "delete"),
+    propertyController.deleteProperty
+  );
 
 module.exports = router;

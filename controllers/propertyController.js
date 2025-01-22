@@ -80,10 +80,12 @@ exports.getBoostIncomeProperties = async (req, res) => {
   try {
     const properties = await Property.find({
       serviceType: "BoostIncome",
-      status: "active"
+      isActive: "active"
     })
       .populate("category") 
       .sort({ createdAt: -1 }); 
+
+      
 
     res.json(properties); 
   } catch (error) {
@@ -97,7 +99,7 @@ exports.getPropertyBySlug = async (req, res) => {
   try {
     const { slug } = req.params; 
 
-    const property = await Property.findOne({ slug, status: "active" })
+    const property = await Property.findOne({ slug, isActive: "active" })
       .populate("category") 
       .exec();
 
@@ -155,6 +157,28 @@ exports.updatePropertyStatus = async (req, res) => {
       message: "Error updating property status",
       error: error.message
     });
+  }
+};
+
+
+exports.deleteProperty = async (req, res) => {
+  try {
+    const { propertyId } = req.params; 
+
+    // Find the property by ID and delete it
+    const property = await Property.findByIdAndDelete(propertyId);
+
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+
+    res.status(200).json({
+      message: "Property deleted successfully",
+      property,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete property", error });
+    console.error("Error deleting property:", error);
   }
 };
 
