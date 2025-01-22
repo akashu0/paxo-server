@@ -72,6 +72,7 @@ const loginVerify = async (req, res) => {
       message: "Dummy user logged in successfully",
       name: dummyUser.username,
       token,
+      
     });
   }
 
@@ -93,6 +94,7 @@ const loginVerify = async (req, res) => {
     message: "User logged in successfully",
     name: user.username,
     token,
+    kycStatus:user.isKycVerified
   });
 };
 
@@ -214,7 +216,7 @@ const updateKycDetails = async (req, res) => {
 const getProfile = async (req, res) => {
   try {
     const userId = req.user.id
-    const user = await User.findById(userId).select('-loggedInDevice -status -isKycVerified')
+    const user = await User.findById(userId).select('-loggedInDevice -status')
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
