@@ -419,6 +419,7 @@ exports.downloadPaymentSlip = async (req, res) => {
  * @access Private
  */
 exports.downloadOrderPaymentSlip =  async (req, res) => {
+  
   try {
     // Find the order and populate necessary fields
     const order = await Order.findById(req.params.orderId)
