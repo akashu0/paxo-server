@@ -137,7 +137,7 @@ const createUser = async (req, res) => {
 
   // Send OTP using Twilio
 
-    // await sendOtp(phone, otp);
+    await sendOtp(phone, otp);
 
     // Create a new user with OTP (without saving yet)
     const user = new User({
