@@ -1,21 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const multer = require("multer");
+const fs = require('fs');
+const path = require('path');
 
 const authControllers = require("../controllers/authcontroller")
 
 const { userVerify } = require("../middlewares/user")
 
+
+
 // Multer configuration for file uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, "./uploads/kyc"); // Upload directory
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(null, `${req.body.username}-${uniqueSuffix}-${file.originalname}`);
-    },
-  });
+  destination: (req, file, cb) => {
+    const dir = "./uploads/kyc";
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    cb(null, dir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, `${req.body.username}-${uniqueSuffix}-${file.originalname}`);
+  },
+});
 
   const upload = multer({
     storage: storage,
@@ -34,15 +42,19 @@ const storage = multer.diskStorage({
   });
 
   // Multer configuration for profile image uploads
-const profileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "./uploads/profile"); // Profile images directory
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, `profile-${uniqueSuffix}-${file.originalname}`);
-  },
-}); 
+  const profileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const dir = "./uploads/profile";
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, `profile-${uniqueSuffix}-${file.originalname}`);
+    },
+  });
 
 const profileUpload = multer({
   storage: profileStorage,
