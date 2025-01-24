@@ -200,7 +200,7 @@ const updateKycDetails = async (req, res) => {
     }
 
     user.username = username;
-    user.isKycVerified = true;
+    user.isKycVerified = false;
     
     await user.save();
     
