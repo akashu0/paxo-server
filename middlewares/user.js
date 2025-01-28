@@ -8,7 +8,6 @@ const secretKey = process.env.JWT_SECRET;
 
 
 
-
 const userVerify = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader) {
@@ -43,8 +42,10 @@ const userVerify = async (req, res, next) => {
         res.status(400).json({ error: "You are not authenticated" });
     }
 }
+const setupMiddleware = async (req, res, next) => {
+    const fingerprint = req.query.fingerprint;
+    req.fingerprint = { hash: fingerprint };
+    next();
+  }
 
-
-
-
-module.exports = { userVerify  };
+module.exports = { userVerify ,setupMiddleware };
