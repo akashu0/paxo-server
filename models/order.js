@@ -49,11 +49,9 @@ const orderSchema = new mongoose.Schema(
       },
       transactionId: {
         type: String,
-        required: true
       },
       paymentDate: {
         type: String,
-        required: true
       },
       paymentProof: {
         type: String

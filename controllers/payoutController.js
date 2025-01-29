@@ -1,90 +1,83 @@
 const MonthlyPayout = require('../models//monthlypayout');
 
 exports.getPayoutSummary = async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const currentDate = new Date();
+  try {
+    const userId = req.user.id;
+    const currentDate = new Date();
 
-      
-  
-      // Get all active payouts for the user
-      const payouts = await MonthlyPayout.find({
-        user: userId,
-        isActive: "active",
-        // Find payouts that have unpaid payments with next_payment date
-        'payment_structure': {
-          $elemMatch: {
-            status: "unpaid"
-          }
-        }
-      }).populate({
-        path: 'order',
-        select: 'orderNumber property',
-        populate: {
-          path: 'property',
-          select: 'property_name property_type'
-        }
-      });
-  
-      let totalPaidAmount = 0;
-      let totalPendingAmount = 0;
-      let nextPayout = null;
-  
-      // Find the next upcoming payment across all payouts
-      let nearestPaymentDate = null;
-      let nearestPayment = null;
-      let nearestPayout = null;
-  
-      payouts.forEach(payout => {
-        // Calculate totals
-        payout.payment_structure.forEach(payment => {
-          if (payment.status === "paid") {
-            totalPaidAmount += Number(payment.paid_amount);
-          } else {
-            totalPendingAmount += Number(payment.expected_amount);
-  
-            // Check if this is the next upcoming payment
-            const paymentDate = new Date(payment.next_payment);
-            if (paymentDate >= currentDate) {
-              if (!nearestPaymentDate || paymentDate < nearestPaymentDate) {
-                nearestPaymentDate = paymentDate;
-                nearestPayment = payment;
-                nearestPayout = payout;
-              }
-            }
-          }
-        });
-      });
-  
-      // Set next payout if found
-      if (nearestPayment && nearestPayout) {
-        nextPayout = {
-          dueDate: nearestPayment.next_payment,
-          estimatedAmount: nearestPayment.expected_amount,
-          previousPaymentDate: nearestPayment.previous_payment,
-          propertyTitle: nearestPayout.order.property?.title || 'N/A',
-          orderNumber: nearestPayout.order.orderNumber
-        };
+    // Get all active payouts for the user
+    const payouts = await MonthlyPayout.find({
+      user: userId,
+      isActive: "active",
+    }).populate({
+      path: 'order',
+      select: 'orderNumber property',
+      populate: {
+        path: 'property',
+        select: 'property_name property_type'
       }
-  
-      res.json({
-        success: true,
-        data: {
-          nextPayout,
-          totalPaidAmount: totalPaidAmount.toFixed(2),
-          totalPendingAmount: totalPendingAmount.toFixed(2)
+    });
+
+    let totalPaidAmount = 0;
+    let totalPendingAmount = 0;
+    let nextPayoutTotal = 0;
+    let nearestPaymentDate = null;
+
+    // Helper function to compare dates ignoring time
+    const isSameDay = (date1, date2) => {
+      return date1.getFullYear() === date2.getFullYear() &&
+             date1.getMonth() === date2.getMonth() &&
+             date1.getDate() === date2.getDate();
+    };
+
+    // First find the nearest payment date across all payouts
+    payouts.forEach(payout => {
+      payout.payment_structure.forEach(payment => {
+        const paymentDate = new Date(payment.next_payment);
+        if (paymentDate >= currentDate) {
+          if (!nearestPaymentDate || paymentDate < nearestPaymentDate) {
+            nearestPaymentDate = paymentDate;
+          }
         }
       });
-  
-    } catch (error) {
-      console.error('Get Payout Summary Error:', error);
-      res.status(500).json({
-        success: false,
-        message: "Error retrieving payout summary",
-        error: error.message
+    });
+
+    // Then calculate totals including the next payout total
+    payouts.forEach(payout => {
+      payout.payment_structure.forEach(payment => {
+        if (payment.status === "paid") {
+          totalPaidAmount += Number(payment.paid_amount);
+        } else {
+          totalPendingAmount += Number(payment.expected_amount);
+          
+          // Compare dates ignoring time component
+          const paymentDate = new Date(payment.next_payment);
+          if (nearestPaymentDate && isSameDay(paymentDate, nearestPaymentDate)) {
+            nextPayoutTotal += Number(payment.expected_amount);
+          }
+        }
       });
-    }
-  };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        nextPayoutDate: nearestPaymentDate,
+        nextPayoutTotal: nextPayoutTotal.toFixed(2),
+        totalPaidAmount: totalPaidAmount.toFixed(2),
+        totalPendingAmount: totalPendingAmount.toFixed(2)
+      }
+    });
+
+  } catch (error) {
+    console.error('Get Payout Summary Error:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error retrieving payout summary",
+      error: error.message
+    });
+  }
+};
   
   // Get payout history with pagination
   exports.getPayoutHistory = async (req, res) => {

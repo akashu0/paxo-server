@@ -6,45 +6,97 @@ const PDFDocument = require('pdfkit');
 
 const receiptService = require('../services/receiptService');
 
-exports.createOrder = async (req, res) => {
+// exports.createOrder = async (req, res) => {
   
+//   try {
+//     const { 
+//       propertyId, 
+//       units, 
+//       paymentMethod, 
+//       paidAmount,
+//       transactionId,
+//       paymentDate,
+//     } = req.body;
+
+
+    
+  
+    
+
+//     // Validate property exists and has enough units
+//     const property = await Property.findById(propertyId);
+//     if (!property) {
+//       return res.status(404).json({ message: 'Property not found' });
+//     }
+
+//     if (Number(units) > Number(property.available_unit)) {
+//       return res.status(400).json({ message: 'Not enough units available' });
+//     }
+
+//     const paymentProofPath = req.file ? req.file.path : '';
+
+//     const order = new Order({
+//       property: propertyId,
+//       user: req.user.id, 
+//       units,
+//       paymentDetails: {
+//         method: paymentMethod,
+//         paidAmount,
+//         transactionId,
+//         paymentDate,
+//         paymentProof: paymentProofPath
+//       },
+//     });
+
+//     await order.save();
+
+//     res.status(201).json({
+//       message: 'Order created successfully',
+//       success: "ok"
+//       // order
+//     });
+
+//   } catch (error) {
+//     console.log(error.message);
+    
+//     res.status(500).json({
+//       message: 'Error creating order',
+//       error: error.message
+//     });
+//   }
+// };
+
+
+exports.createOrder = async (req, res) => {
   try {
     const { 
       propertyId, 
-      units, 
+      quantity,   
       paymentMethod, 
-      paidAmount,
-      transactionId,
-      paymentDate,
+      totalAmount 
     } = req.body;
 
+    console.log("Property ID:", propertyId);
 
-    
-  
-    
-
-    // Validate property exists and has enough units
+    // Validate if the property exists
     const property = await Property.findById(propertyId);
     if (!property) {
       return res.status(404).json({ message: 'Property not found' });
     }
 
-    if (Number(units) > Number(property.available_unit)) {
+    // Validate if enough units are available
+    if (Number(quantity) > Number(property.available_unit)) {
       return res.status(400).json({ message: 'Not enough units available' });
     }
 
-    const paymentProofPath = req.file ? req.file.path : '';
-
+    // Create and save the order
     const order = new Order({
       property: propertyId,
       user: req.user.id, 
-      units,
+      units: quantity,  // Storing as "units"
       paymentDetails: {
         method: paymentMethod,
-        paidAmount,
-        transactionId,
-        paymentDate,
-        paymentProof: paymentProofPath
+        paidAmount: totalAmount,
       },
     });
 
@@ -53,12 +105,10 @@ exports.createOrder = async (req, res) => {
     res.status(201).json({
       message: 'Order created successfully',
       success: "ok"
-      // order
     });
 
   } catch (error) {
-    console.log(error.message);
-    
+    console.log("Error:", error.message);
     res.status(500).json({
       message: 'Error creating order',
       error: error.message
@@ -68,20 +118,35 @@ exports.createOrder = async (req, res) => {
 
 
 
+
 exports.getUserOrders = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // Fetch user's orders from the database
-    const orders = await Order.find({ user: userId }).sort({ createdAt: -1 }).populate("property")
+    // Fetch completed user orders where both orderStatus and paymentStatus are "completed"
+    const orders = await Order.find({
+      user: userId,
+    })
+      .sort({ createdAt: -1 })
+      .populate("property");
 
-    // Respond with the user's orders
-    res.status(200).json({ success: true, orders });
+    // Calculate total investment (sum of baseAmount from priceDetails)
+    const totalInvestment = orders.reduce((sum, order) => {
+      return sum + (Number(order.priceDetails?.baseAmount) || 0);
+    }, 0);
+
+    // Respond with user's orders and total investment
+    res.status(200).json({
+      success: true,
+      totalInvestment,
+      orders,
+    });
   } catch (error) {
-    console.error('Error fetching user orders:', error);
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error("Error fetching user orders:", error);
+    res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 
 
 exports.getConfirmedUserOrders = async (req, res) => {

@@ -88,6 +88,8 @@ exports.getBoostIncomeProperties = async (req, res) => {
       
 
     res.json(properties); 
+
+    
   } catch (error) {
     res.status(500).json({ message: error.message }); 
   }

@@ -8,16 +8,7 @@ function getNextFifthDate(previousDate) {
   return date;
 }
 
-function calculateMonthlyPayment(totalAmount, capitalAppreciation) {
-  const baseAmount = Number(totalAmount);
-  const appreciationRate = Number(capitalAppreciation);
 
-  const appreciatedValue = (baseAmount * appreciationRate) / 100;
-
-  const monthlyBasePayment = appreciatedValue / 12;
-
-  return String(Math.ceil(monthlyBasePayment));
-}
 
 
 const monthlyPayoutSchema = new mongoose.Schema(
@@ -108,10 +99,9 @@ monthlyPayoutSchema.pre('save', function(next) {
     this.appreciatedValue = String((baseAmount * appreciationRate / 100).toFixed(2));
     
     // Calculate monthly payment amount including taxes
-    const monthlyPayment = calculateMonthlyPayment(
-      this.totalAmount.amount,
-      this.capitalAppreciation
-    );
+
+    const monthlyPayment = this.capitalAppreciation ? 
+    Math.ceil(((appreciationRate / 100) * baseAmount) / 12) : 0;
 
     const startDate = new Date(this.startDate);
     let currentDate = new Date(startDate);

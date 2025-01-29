@@ -39,7 +39,9 @@ const storage = multer.diskStorage({
   });
 
 
-router.post('/create-order',userVerify,upload.single('paymentProof'),  orderController.createOrder);
+// router.post('/create-order',userVerify,upload.single('paymentProof'),  orderController.createOrder);
+
+router.post('/create-order',userVerify,  orderController.createOrder);
 router.get('/my-orders', userVerify, orderController.getUserOrders);
 router.get('/my-confirm-orders', userVerify, orderController.getConfirmedUserOrders);
 router.get('/order-detail/:id',userVerify, orderController.getOrderById);
