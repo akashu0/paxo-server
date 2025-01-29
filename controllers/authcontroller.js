@@ -72,6 +72,7 @@ const loginVerify = async (req, res) => {
       message: "Dummy user logged in successfully",
       name: dummyUser.username,
       token,
+      kycStatus:dummyUser.isKycVerified
       
     });
   }
