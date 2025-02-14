@@ -46,6 +46,30 @@ const userSchema = new Schema(
       panFile: {
         type: String,
       },
+      status: {
+        type: String,
+        enum: ["pending", "approved", "rejected", "flagged"],
+        default: "pending"
+      },
+      reviewNotes: {
+        type: String,
+        trim: true
+      },
+      reviewedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      reviewedAt: {
+        type: Date
+      },
+      submittedAt: {
+        type: Date,
+        default: Date.now
+      },
+      lastUpdatedAt: {
+        type: Date,
+        default: Date.now
+      }
     },
     age: {
       type: Number,
@@ -93,6 +117,14 @@ const userSchema = new Schema(
     timestamps: true,
   }
 );
+
+// Pre-save middleware to update lastUpdatedAt when KYC is modified
+userSchema.pre('save', function(next) {
+  if (this.isModified('kyc')) {
+    this.kyc.lastUpdatedAt = new Date();
+  }
+  next();
+});
 
 const User = mongoose.model("User", userSchema);
 

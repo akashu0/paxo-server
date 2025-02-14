@@ -39,20 +39,21 @@ const storage = multer.diskStorage({
   });
 
 
-// router.post('/create-order',userVerify,upload.single('paymentProof'),  orderController.createOrder);
+router.post('/create-order',userVerify,upload.single('paymentProof'),  orderController.createOrder);
 
-router.post('/create-order',userVerify,  orderController.createOrder);
+// router.post('/create-order',userVerify,  orderController.createOrder);
 router.get('/my-orders', userVerify, orderController.getUserOrders);
 router.get('/my-confirm-orders', userVerify, orderController.getConfirmedUserOrders);
 router.get('/order-detail/:id',userVerify, orderController.getOrderById);
-router.get('/download-payment-slip/:orderId',userVerify, orderController.downloadPaymentSlip);
+router.get('/download-payment-slip/:orderId', orderController.downloadPaymentSlip);
 
-router.get('/download-order-paymentslip/:orderId',userVerify, orderController.downloadOrderPaymentSlip);
+router.post('/download-order-paymentslip/:orderId',userVerify, orderController.downloadOrderPaymentSlip);
 
 
 // Admin routes
 router.get('/all-order', adminVerify,  orderController.getAllOrders);
+router.get('/order-details/:id',adminVerify, orderController.getOrderById);
 router.post('/verify-payment/:orderId', adminVerify, orderController.verifyPayment);
-
+router.delete('/delete-order/:orderId', adminVerify, orderController.deleteOrder);
 
 module.exports = router

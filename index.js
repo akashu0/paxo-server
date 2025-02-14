@@ -2,19 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require("cors");
 const dotenv = require("dotenv");
-const http = require('http');
-const { Server } = require('socket.io');
+
 
 dotenv.config();
 const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE'],
-    allowedHeaders: 'Origin, X-Requested-With, Content-Type, Accept, Authorization',
-  }
-});
+
 
 // Import routes
 const authRoutes = require("./routes/auth");
@@ -26,8 +18,6 @@ const adminRoutes = require("./routes/admin");
 const roleRoutes = require("./routes/role");
 const legalRoutes = require("./routes/legalDocumentRoutes");
 const payoutRoutes = require("./routes/payout");
-const setupSocket = require('./utils/socket');
-const chatRoutes = require("./routes/chatRoutes")(io);
 
 // Middleware
 app.use(cors({
@@ -66,12 +56,9 @@ app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/role", roleRoutes);
 app.use("/api/legal", legalRoutes);
 app.use("/api/payout", payoutRoutes);
-app.use("/api/chat", chatRoutes);
 
-// Socket setup
-setupSocket(io);
 
 // Start server
-server.listen(process.env.PORT, () => {
+app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`);
 });

@@ -24,4 +24,8 @@ router.delete(
     propertyController.deleteProperty
   );
 
+router.post("/capital-appreciation/::propertyId", propertyController.addCapitalappreciation);
+
+  
+
 module.exports = router;

@@ -25,9 +25,15 @@ const orderSchema = new mongoose.Schema(
       taxAmount: String,
       monthlyEarnings: String,
       pricePerUnit: String,
-      capitalAppreciation: String,
       minimum_sqft: String  // Added minimum_sqft field
     },
+
+    // capitalAppreciation: {
+    //   value: Number,
+    //   prelistedBuyerId: { type: mongoose.Schema.Types.ObjectId, ref: "Admin" }
+    // },
+
+
     orderStatus: {
       type: String,
       enum: ['pending', 'confirmed', 'cancelled', 'completed'],
@@ -101,7 +107,7 @@ orderSchema.pre("save", async function(next) {
       const updatedAvailableUnits = Math.floor(totalArea / Number(property.minimum_sqft));
 
       // Set total amount including tax
-      this.totalAmount = String(totalPrice + taxes);
+      this.totalAmount = String(totalPrice);
       
       // Store all calculated details including minimum_sqft
       this.priceDetails = {

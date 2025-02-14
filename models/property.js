@@ -47,7 +47,7 @@ const propertySchema = new mongoose.Schema(
     },
     minimum_sqft: {  // Added new field
       type: String,
-      required: true,
+      required: true, 
       trim: true
     },
     capital_appreciation: {
@@ -55,11 +55,29 @@ const propertySchema = new mongoose.Schema(
       trim: true,
       required: true,
     },
+     // Updated capital appreciation field
+    //  capital_appreciation: [
+    //   {
+    //     prlistedBuyer: {
+    //       type: mongoose.Schema.Types.ObjectId, // Reference to the Buyer model
+    //       ref: "Admin",
+    //     },
+    //     value: {
+    //       type: Number, // Capital appreciation value offered by the buyer
+    //     },
+    //     offeredAt: {
+    //       type: Date,
+    //       default: Date.now, // The date when the offer was made
+    //     },
+    //   },
+    // ],
     property_img: {
       type: String,
     },
     property_owner: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Admin',
+      required: true
     },
     marketValue: {
       type: String,

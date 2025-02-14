@@ -184,3 +184,44 @@ exports.deleteProperty = async (req, res) => {
   }
 };
 
+exports.addCapitalappreciation = async (req, res) => {
+  try {
+      const { propertyId } = req.params;
+      const { prlistedBuyerId, value } = req.body;
+
+      // Validate input
+      if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+          return res.status(400).json({ error: "Invalid property ID" });
+      }
+      if (!mongoose.Types.ObjectId.isValid(prlistedBuyerId)) {
+          return res.status(400).json({ error: "Invalid buyer ID" });
+      }
+      if (!value || isNaN(value)) {
+          return res.status(400).json({ error: "Capital appreciation value must be a number" });
+      }
+
+      // Find the property
+      const property = await Property.findById(propertyId);
+      if (!property) {
+          return res.status(404).json({ error: "Property not found" });
+      }
+
+      // Add capital appreciation offer
+      property.capital_appreciation.push({
+        prlistedbuyer: prlistedBuyerId,
+          value: value,
+      });
+
+      // Save the updated property
+      await property.save();
+
+      res.status(200).json({
+          message: "Capital appreciation offer added successfully",
+          capital_appreciation: property.capital_appreciation,
+      });
+
+  } catch (error) {
+      console.error("Error adding capital appreciation:", error);
+      res.status(500).json({ error: "Internal server error" });
+  }
+}

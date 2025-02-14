@@ -3,100 +3,50 @@ const MonthlyPayout = require('../models/monthlypayout');
 const LegalDocument = require('../models/legalDocument');
 const Property = require("../models/property")
 const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
 
 const receiptService = require('../services/receiptService');
 
-// exports.createOrder = async (req, res) => {
-  
-//   try {
-//     const { 
-//       propertyId, 
-//       units, 
-//       paymentMethod, 
-//       paidAmount,
-//       transactionId,
-//       paymentDate,
-//     } = req.body;
-
-
-    
-  
-    
-
-//     // Validate property exists and has enough units
-//     const property = await Property.findById(propertyId);
-//     if (!property) {
-//       return res.status(404).json({ message: 'Property not found' });
-//     }
-
-//     if (Number(units) > Number(property.available_unit)) {
-//       return res.status(400).json({ message: 'Not enough units available' });
-//     }
-
-//     const paymentProofPath = req.file ? req.file.path : '';
-
-//     const order = new Order({
-//       property: propertyId,
-//       user: req.user.id, 
-//       units,
-//       paymentDetails: {
-//         method: paymentMethod,
-//         paidAmount,
-//         transactionId,
-//         paymentDate,
-//         paymentProof: paymentProofPath
-//       },
-//     });
-
-//     await order.save();
-
-//     res.status(201).json({
-//       message: 'Order created successfully',
-//       success: "ok"
-//       // order
-//     });
-
-//   } catch (error) {
-//     console.log(error.message);
-    
-//     res.status(500).json({
-//       message: 'Error creating order',
-//       error: error.message
-//     });
-//   }
-// };
-
-
 exports.createOrder = async (req, res) => {
+  
   try {
     const { 
       propertyId, 
-      quantity,   
+      quantity, 
       paymentMethod, 
-      totalAmount 
+      paidAmount,
+      transactionId,
+      paymentDate,
     } = req.body;
 
-    console.log("Property ID:", propertyId);
 
-    // Validate if the property exists
+    
+  
+    
+
+    // Validate property exists and has enough units
     const property = await Property.findById(propertyId);
     if (!property) {
       return res.status(404).json({ message: 'Property not found' });
     }
 
-    // Validate if enough units are available
     if (Number(quantity) > Number(property.available_unit)) {
       return res.status(400).json({ message: 'Not enough units available' });
     }
 
-    // Create and save the order
+    const paymentProofPath = req.file ? req.file.path : '';
+
     const order = new Order({
       property: propertyId,
       user: req.user.id, 
-      units: quantity,  // Storing as "units"
+      units:quantity,
       paymentDetails: {
         method: paymentMethod,
-        paidAmount: totalAmount,
+        paidAmount,
+        transactionId,
+        paymentDate,
+        paymentProof: paymentProofPath
       },
     });
 
@@ -105,16 +55,83 @@ exports.createOrder = async (req, res) => {
     res.status(201).json({
       message: 'Order created successfully',
       success: "ok"
+      // order
     });
 
   } catch (error) {
-    console.log("Error:", error.message);
+    console.log(error.message);
+    
     res.status(500).json({
       message: 'Error creating order',
       error: error.message
     });
   }
 };
+
+
+// exports.createOrder = async (req, res) => {
+//   try {
+//     const { 
+//       propertyId, 
+//       quantity,   
+//       paymentMethod, 
+//       totalAmount 
+//     } = req.body;
+
+
+// console.log(propertyId);
+// console.log(paymentMethod);
+
+//     // Validate if the property exists
+//     const property = await Property.findById(propertyId);
+//     if (!property) {
+//       return res.status(404).json({ message: 'Property not found' });
+//     }
+
+//     // Validate if enough units are available
+//     if (Number(quantity) > Number(property.available_unit)) {
+//       return res.status(400).json({ message: 'Not enough units available' });
+//     }
+
+//     // Find the highest bidder in capital_appreciation
+//     let highestBid = null;
+//     if (property.capital_appreciation && property.capital_appreciation.length > 0) {
+//       highestBid = property.capital_appreciation.reduce((max, bid) => 
+//         bid.value > (max?.value || 0) ? bid : max, null);
+//     }
+
+//     // Create and save the order
+//     const order = new Order({
+//       property: propertyId,
+//       user: req.user.id, 
+//       units: quantity,  // Storing as "units"
+//       paymentDetails: {
+//         method: paymentMethod,
+//         paidAmount: totalAmount,
+//       },
+//       capitalAppreciation: highestBid 
+//         ? {
+//             value: highestBid.value,
+//             prelistedBuyerId: highestBid.prlistedBuyer, // Buyer ID from the highest bid
+//           }
+//         : null, // No bids available
+//     });
+
+//     await order.save();
+
+//     res.status(201).json({
+//       message: 'Order created successfully',
+//       success: "ok"
+//     });
+
+//   } catch (error) {
+//     console.log("Error:", error.message);
+//     res.status(500).json({
+//       message: 'Error creating order',
+//       error: error.message
+//     });
+//   }
+// };
 
 
 
@@ -476,15 +493,67 @@ exports.downloadPaymentSlip = async (req, res) => {
   }
 };
 
+exports.deleteOrder = async (req, res) => {
+  try {
+    const { orderId } = req.params;
 
+    // Find the order first to get file path
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        message: 'Order not found'
+      });
+    }
+
+ 
+
+    // Get the payment proof file path
+    const paymentProofPath = order.paymentDetails.paymentProof;
+
+    // Delete the file if it exists
+    if (paymentProofPath) {
+      const fullPath = path.join(__dirname, '..', paymentProofPath);
+      try {
+        if (fs.existsSync(fullPath)) {
+          fs.unlinkSync(fullPath);
+        }
+      } catch (fileError) {
+        console.error('Error deleting file:', fileError);
+        // Continue with order deletion even if file deletion fails
+      }
+    }
+
+    // Update property available units
+    await Property.findByIdAndUpdate(
+      order.property,
+      { $inc: { available_unit: order.units } },
+      { new: true }
+    );
+
+    // Delete the order from database
+    await Order.findByIdAndDelete(orderId);
+
+    res.status(200).json({
+      message: 'Order deleted successfully',
+      success: true
+    });
+
+  } catch (error) {
+    console.error('Delete order error:', error);
+    res.status(500).json({
+      message: 'Error deleting order',
+      error: error.message
+    });
+  }
+};
 
 /**
  * @route GET /api/orders/:orderId/receipt
  * @description Generate and download payment receipt for a verified order
  * @access Private
  */
-exports.downloadOrderPaymentSlip =  async (req, res) => {
-  
+exports.downloadOrderPaymentSlip = async (req, res) => {
   try {
     // Find the order and populate necessary fields
     const order = await Order.findById(req.params.orderId)
@@ -504,15 +573,18 @@ exports.downloadOrderPaymentSlip =  async (req, res) => {
       });
     }
 
+    // Get logo from request
+    const logoData = req.body.logo ;
+
     // Prepare data for the receipt
     const receiptData = {
       orderId: order._id,
-      customerName: order.user.name,
+      customerName: order.user.username,
       customerEmail: order.user.email,
       customerPhone: order.user.phone,
       propertyName: order.property.property_name,
       propertyType: order.property.property_type,
-      location: order.property.location,
+      location: order.property.property_location,
       capitalAppreciation: order.property.capital_appreciation,
       monthlyEarnings: order.priceDetails.monthlyEarnings,
       totalAmount: order.totalAmount,
@@ -520,7 +592,7 @@ exports.downloadOrderPaymentSlip =  async (req, res) => {
       taxAmount: order.priceDetails.taxAmount,
       paymentMethod: order.paymentDetails.method,
       transactionId: order.paymentDetails.transactionId,
-      paymentDate: new Date(order.paymentDetails.paymentDate).toLocaleDateString('en-IN')
+      logoData: logoData
     };
 
     // Generate PDF
@@ -543,5 +615,5 @@ exports.downloadOrderPaymentSlip =  async (req, res) => {
       error: error.message 
     });
   }
-}
+};
 

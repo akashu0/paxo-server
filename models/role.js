@@ -10,6 +10,10 @@ const permissionSchema = new mongoose.Schema({
     role: [{ type: String }],
     category: [{ type: String }],
     prelistedBuyer: [{ type: String }],
+    accountant: [{ type: String }],
+    properties_owner: [{ type: String }],
+    kyc: [{ type: String }],
+    kyc: [{ type: String }],
   
 }, { _id: false });
 

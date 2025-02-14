@@ -1,152 +1,240 @@
 const PDFDocument = require('pdfkit');
-const path = require('path');
-const fs = require('fs');
 
 class ReceiptService {
   constructor() {
-    // Load fonts
     this.fontRegular = 'Helvetica';
     this.fontBold = 'Helvetica-Bold';
     
-    // Define colors
     this.colors = {
       primary: '#2c3e50',
       secondary: '#7f8c8d',
       success: '#27ae60',
-      border: '#3498db'
+      border: '#3498db',
+      tableHeader: '#f5f6fa',
+      tableBorder: '#dcdde1'
+    };
+
+    this.spacing = {
+      sectionGap: 25,
+      lineGap: 12,
+      headerGap: 15
     };
   }
 
-  // Helper to format currency
   formatCurrency(amount) {
     return Number(amount).toLocaleString('en-IN');
   }
 
-  // Helper to generate receipt ID
   generateReceiptId(orderId) {
     return `PW-${orderId.toString().slice(-6).toUpperCase()}`;
   }
 
-  // Add text with label
-  addDetailRow(doc, label, value, { x = 50, y, labelWidth = 150 }) {
-    doc
-      .font(this.fontBold)
-      .fillColor(this.colors.primary)
-      .text(label, x, y)
-      .font(this.fontRegular)
-      .fillColor(this.colors.secondary)
-      .text(value, x + labelWidth, y, { align: 'left' });
+  getLogoBuffer(logoData) {
+    if (logoData.includes('base64,')) {
+      const base64Data = logoData.split('base64,')[1];
+      return Buffer.from(base64Data, 'base64');
+    }
+    return Buffer.from(logoData, 'base64');
   }
 
-  // Add section title
-  addSectionTitle(doc, title, y) {
-    doc
-      .font(this.fontBold)
-      .fontSize(14)
-      .fillColor(this.colors.primary)
-      .text(title, 50, y)
-      .moveDown(0.5);
+  createTable(doc, headers, rows, startY) {
+    const columnWidth = 125;
+    const cellPadding = 8;
+    const rowHeight = 20;
+    let currentY = startY;
 
-    // Add underline
+    // Draw table header
     doc
-      .moveTo(50, y + 20)
-      .lineTo(550, y + 20)
-      .strokeColor(this.colors.border)
+      .fillColor(this.colors.tableHeader)
+      .rect(50, currentY, 500, rowHeight)
+      .fill();
+
+    doc.fillColor(this.colors.primary);
+    headers.forEach((header, i) => {
+      doc
+        .font(this.fontBold)
+        .fontSize(10)
+        .text(
+          header,
+          50 + (i * columnWidth),
+          currentY + cellPadding,
+          { width: columnWidth, align: 'center' }
+        );
+    });
+
+    currentY += rowHeight;
+
+    // Draw table rows
+    rows.forEach((row, rowIndex) => {
+      if (rowIndex % 2 === 0) {
+        doc
+          .fillColor('#f8f9fa')
+          .rect(50, currentY, 500, rowHeight)
+          .fill();
+      }
+
+      doc.fillColor(this.colors.secondary);
+      row.forEach((cell, i) => {
+        doc
+          .font(this.fontRegular)
+          .fontSize(10)
+          .text(
+            cell,
+            50 + (i * columnWidth),
+            currentY + cellPadding,
+            { width: columnWidth, align: 'center' }
+          );
+      });
+
+      currentY += rowHeight;
+    });
+
+    // Draw table borders
+    doc
+      .strokeColor(this.colors.tableBorder)
+      .lineWidth(1)
+      .rect(50, startY, 500, currentY - startY)
       .stroke();
 
-    return y + 40;
+    return currentY + this.spacing.sectionGap;
   }
 
   async generateReceipt(orderData) {
     return new Promise((resolve, reject) => {
       try {
-        // Create PDF document
         const doc = new PDFDocument({
           margin: 50,
           size: 'A4'
         });
 
-        // Collect chunks of data
         const chunks = [];
         doc.on('data', chunk => chunks.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
 
-        // Header
-        doc
-          .font(this.fontBold)
-          .fontSize(24)
-          .fillColor(this.colors.primary)
-          .text('Paxo Wealth', { align: 'center' })
-          .font(this.fontRegular)
-          .fontSize(12)
-          .fillColor(this.colors.secondary)
-          .text('Empowering Financial Growth with Security', { align: 'center' })
-          .moveDown(2);
+        // Add logo if provided
+        if (orderData.logoData) {
+          const logoBuffer = this.getLogoBuffer(orderData.logoData);
+          doc.image(logoBuffer, 250, 40, { 
+            width: 100,
+            align: 'center'
+          });
+          doc.moveDown(2);
+        }
 
-        // Receipt ID and Date
-        doc
-          .font(this.fontBold)
-          .fontSize(12)
-          .fillColor(this.colors.primary);
-
-        this.addDetailRow(doc, 'Receipt ID:', this.generateReceiptId(orderData.orderId), { y: 150 });
-        this.addDetailRow(doc, 'Date:', new Date().toLocaleDateString('en-IN'), { y: 170 });
-
-        // Customer Details Section
-        let yPos = this.addSectionTitle(doc, 'Customer Details', 210);
-        this.addDetailRow(doc, 'Name:', orderData.customerName, { y: yPos });
-        this.addDetailRow(doc, 'Email:', orderData.customerEmail, { y: yPos + 20 });
-        this.addDetailRow(doc, 'Phone:', orderData.customerPhone, { y: yPos + 40 });
-
-        // Order Summary Section
-        yPos = this.addSectionTitle(doc, 'Order Summary', yPos + 80);
-        this.addDetailRow(doc, 'Property Name:', orderData.propertyName, { y: yPos });
-        this.addDetailRow(doc, 'Type:', orderData.propertyType, { y: yPos + 20 });
-        this.addDetailRow(doc, 'Location:', orderData.location, { y: yPos + 40 });
-        this.addDetailRow(doc, 'Growth Rate:', orderData.capitalAppreciation + '% p.a.', { y: yPos + 60 });
-        this.addDetailRow(doc, 'Tenure:', '12 Months', { y: yPos + 80 });
-        this.addDetailRow(doc, 'Monthly Payouts:', '₹' + this.formatCurrency(orderData.monthlyEarnings), { y: yPos + 100 });
-
-        // Payment Details Section
-        yPos = this.addSectionTitle(doc, 'Payment Details', yPos + 140);
+        // Header section
+        let yPos = orderData.logoData ? 160 : 40;
         
-        // Amount Paid (highlighted)
         doc
           .font(this.fontBold)
-          .fontSize(14)
+          .fontSize(16)
+          .fillColor(this.colors.primary)
+          .text('PAYMENT RECEIPT', { align: 'center' })
+          .moveDown(0.5);
+
+        // Receipt details
+        doc.fontSize(10);
+        const leftColumn = 50;
+        const rightColumn = 350;
+
+        doc
+          .font(this.fontBold)
+          .text('Receipt No:', leftColumn, yPos)
+          .font(this.fontRegular)
+          .text(this.generateReceiptId(orderData.orderId), leftColumn + 70, yPos)
+          
+          .font(this.fontBold)
+          .text('Date:', rightColumn, yPos)
+          .font(this.fontRegular)
+          .text(new Date().toLocaleDateString('en-IN'), rightColumn + 40, yPos);
+
+        yPos += 30;
+
+        // Customer Details
+        doc
+          .font(this.fontBold)
+          .text('Bill To:', leftColumn, yPos)
+          .font(this.fontRegular)
+          .text(orderData.customerName, leftColumn, yPos + 20)
+          .text(orderData.customerEmail, leftColumn, yPos + 35)
+          .text(orderData.customerPhone, leftColumn, yPos + 50);
+
+        yPos += 80;
+
+        // Order Details Table
+        const headers = ['Description', '', 'Rate', 'Amount'];
+        const rows = [
+          [
+            orderData.propertyName,
+            '1',
+            `₹${this.formatCurrency(orderData.baseAmount)}`,
+            `₹${this.formatCurrency(orderData.baseAmount)}`
+          ],
+          [
+            'Taxes & Fees',
+            '',
+            `₹${this.formatCurrency(orderData.taxAmount)}`,
+            `₹${this.formatCurrency(orderData.taxAmount)}`
+          ]
+        ];
+
+        yPos = this.createTable(doc, headers, rows, yPos);
+
+        // Total Amount
+        doc
+          .font(this.fontBold)
+          .fontSize(11)
           .fillColor(this.colors.success)
-          .text('Amount Paid: ₹' + this.formatCurrency(orderData.totalAmount), 50, yPos)
-          .moveDown(1);
+          .text(
+            `Total Amount Paid: ₹${this.formatCurrency(orderData.totalAmount)}`,
+            350,
+            yPos,
+            { align: 'right' }
+          );
 
         yPos += 40;
-        this.addDetailRow(doc, 'Property Price:', '₹' + this.formatCurrency(orderData.baseAmount), { y: yPos });
-        this.addDetailRow(doc, 'Taxes and Fees:', '₹' + this.formatCurrency(orderData.taxAmount), { y: yPos + 20 });
-        this.addDetailRow(doc, 'Payment Method:', orderData.paymentMethod, { y: yPos + 40 });
-        this.addDetailRow(doc, 'Transaction ID:', orderData.transactionId, { y: yPos + 60 });
-        this.addDetailRow(doc, 'Payment Date:', orderData.paymentDate, { y: yPos + 80 });
 
-        // Next Steps Section
-        yPos = this.addSectionTitle(doc, 'Next Steps', yPos + 120);
+        // Payment Details
         doc
+          .font(this.fontBold)
+          .fontSize(11)
+          .fillColor(this.colors.primary)
+          .text('Payment Details', 50, yPos)
+          .moveDown(0.5)
           .font(this.fontRegular)
           .fontSize(10)
           .fillColor(this.colors.secondary)
-          .list([
-            'Track your property details and payouts on your personalized dashboard.',
-            'For any queries, contact us at support@paxowealth.com or call +91-9876543210.'
-          ], 50, yPos);
+          .text(`Payment Method: ${orderData.paymentMethod}`)
+          .text(`Transaction ID: ${orderData.transactionId}`)
+          .text(`Property Type: ${orderData.propertyType}`)
+          .text(`Location: ${orderData.location}`)
+          .text('Capital Appreciation: 48%')
+          .text(`Monthly Earnings: ₹${this.formatCurrency(orderData.monthlyEarnings)}`);
+
+        // Next Steps
+        yPos += 120;
+        doc
+          .font(this.fontBold)
+          .fontSize(11)
+          .fillColor(this.colors.primary)
+          .text('Next Steps', 50, yPos)
+          .moveDown(0.5)
+          .font(this.fontRegular)
+          .fontSize(10)
+          .fillColor(this.colors.secondary)
+          .text('• Track your property details and payouts on your personalized dashboard.')
+          .text('• For any queries, contact us at support@paxowealth.com or call +91-9876543210.');
 
         // Footer
         doc
-          .fontSize(10)
+          .fontSize(9)
           .fillColor(this.colors.secondary)
-          .text('Paxo Wealth - "Smart, Secure, Simplified"', 50, 750, { align: 'center' })
-          .text('This is a system-generated receipt. No signature is required.', 50, 770, { align: 'center' })
-          .text('www.paxowealth.com', 50, 790, { align: 'center' });
+          .text('Paxo Wealth - "Smart, Secure, Simplified"', 50, 700, { align: 'center' })
+          .moveDown(0.5)
+          .text('This is a system-generated receipt. No signature is required.', { align: 'center' })
+          .moveDown(0.5)
+          .text('www.paxowealth.com', { align: 'center' });
 
-        // Finalize the PDF
         doc.end();
-
       } catch (error) {
         reject(error);
       }

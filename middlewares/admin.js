@@ -16,8 +16,12 @@ const adminVerify = async (req, res, next) => {
             }
             req.user = user;
 
+         
+
+
             try {
                 const existingUser = await Admin.findOne({ _id: user.id });
+                
                 if (!existingUser) {
                     return res.status(401).json({ error: "User Not Found", action: "logout" });
                 }
