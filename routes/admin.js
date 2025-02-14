@@ -50,7 +50,7 @@ router.get('/kyc-stats', adminVerify,checkPermission("kyc", "view"), adminContro
 router.put(
     '/kyc-documents/:id',
     adminVerify,
-    checkPermission("user", "edit"),
+    checkPermission("kyc", "edit"),
     upload.fields([
       { name: 'adhaarFile', maxCount: 1 },
       { name: 'panFile', maxCount: 1 }
