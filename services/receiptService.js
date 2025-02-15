@@ -185,7 +185,7 @@ class ReceiptService {
           .fontSize(11)
           .fillColor(this.colors.success)
           .text(
-            `Total Amount Paid: ₹${this.formatCurrency(orderData.totalAmount)}`,
+            `Total Amount Paid: ₹${this.formatCurrency(orderData.baseAmount)}`,
             350,
             yPos,
             { align: 'right' }
