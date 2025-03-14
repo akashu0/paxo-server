@@ -40,7 +40,9 @@ const sendLoginOtp = async (req, res) => {
 
   // Send OTP using Twilio
   try {
-    await sendOtp(phone, otp);
+    // await sendOtp(phone, otp);
+    console.log(otp);
+    
 
     // Update user with OTP
     user.otp = otp;
