@@ -82,7 +82,8 @@ exports.getPayoutSummary = async (req, res) => {
   // Get payout history with pagination
   exports.getPayoutHistory = async (req, res) => {
     try {
-      const userId = req.user._id;
+      const userId = req.user.id;
+      
       const { page = 1, limit = 10 } = req.query;
       const skip = (page - 1) * limit;
   
@@ -95,28 +96,33 @@ exports.getPayoutSummary = async (req, res) => {
         select: 'orderNumber property',
         populate: {
           path: 'property',
-          select: 'title propertyType'
+          select: 'property_name property_type'
         }
       });
   
       // Extract all paid payments
       let paidPayments = [];
       payouts.forEach(payout => {
-        const paidFromThisPayout = payout.payment_structure
-          .filter(payment => payment.status === "paid")
-          .map(payment => ({
-            paymentDate: payment.transaction_details.processedAt,
-            propertyTitle: payout.order.property?.title || 'N/A',
-            propertyType: payout.order.property?.propertyType || 'N/A',
-            orderNumber: payout.order.orderNumber,
-            paidAmount: payment.paid_amount,
-            transactionId: payment.transaction_details.transactionId,
-            paymentMethod: payment.transaction_details.paymentMethod,
-            receiptUrl: payment.receipt_url,
-            remarks: payment.transaction_details.remarks || ''
-          }));
-        paidPayments = [...paidPayments, ...paidFromThisPayout];
+        // Check if payment_structure exists and is an array
+        if (payout.payment_structure && Array.isArray(payout.payment_structure)) {
+          const paidFromThisPayout = payout.payment_structure
+            .filter(payment => payment.status === "paid")
+            .map(payment => ({
+              paymentDate: payment.next_payment,
+              propertyTitle: payout.order?.property?.property_name || 'N/A',
+              propertyType: payout.order?.property?.property_type || 'N/A',
+              orderNumber: payout.order?.orderNumber || 'Unknown',
+              paidAmount: payment.paid_amount,
+              transactionId: payment.transaction_details?.transactionId || 'N/A',
+              paymentMethod: payment.transaction_details?.paymentMethod || 'N/A',
+              receiptUrl: payment.receipt_url || '',
+              remarks: payment.transaction_details?.remarks || ''
+            }));
+          paidPayments = [...paidPayments, ...paidFromThisPayout];
+        }
       });
+
+      
   
       // Sort by payment date in descending order
       paidPayments.sort((a, b) => new Date(b.paymentDate) - new Date(a.paymentDate));
