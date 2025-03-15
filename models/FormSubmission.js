@@ -1,16 +1,43 @@
-const mongoose = require("mongoose");
+// models/FormSubmission.js
+const mongoose = require('mongoose');
 
-const FormSubmissionSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true, trim: true },
-    phone: { type: String, required: true, trim: true },
-    email: { type: String, required: true, trim: true },
-    address: { type: String, required: true, trim: true },
-    message: { type: String, trim: true },
-    interested: { type: Boolean, default: false },
-    serviceType: { type: String, enum: ["NiftyLand", "NiftyRide"], required: true, trim: true },
+const formSubmissionSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Name is required']
   },
-  { timestamps: true }
-);
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email address']
+  },
+  phone: {
+    type: String,
+    required: [true, 'Phone number is required']
+  },
+  address: {
+    type: String,
+    required: [true, 'Address is required']
+  },
+  interested: {
+    type: String,
+    enum: ['Properties', 'Ride', 'Travel', 'Biz', 'Energy'],
+    default: 'Properties'
+  },
+  message: {
+    type: String
+  },
+  serviceType: {
+    type: String,
+    required: [true, 'Service type is required'],
+    enum: ['NiftiLand', 'NiftiRide']
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
 
-module.exports = mongoose.model("FormSubmission", FormSubmissionSchema);
+const FormSubmission = mongoose.model('FormSubmission', formSubmissionSchema);
+
+module.exports = FormSubmission;
