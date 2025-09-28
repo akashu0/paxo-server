@@ -3,13 +3,11 @@ const FormSubmission = require("../models/FormSubmission");
 // Submit form data
 exports.submitForm = async (req, res) => {
   try {
-    const { name, phone, email, address, message, interested, serviceType } = req.body;
+    const { fullName, phone, email, address, message, } = req.body;
 
-    if (!name || !phone || !email || !address || !serviceType) {
-      return res.status(400).json({ error: "All required fields must be filled" });
-    }
+   
 
-    const newSubmission = new FormSubmission({ name, phone, email, address, message, interested, serviceType });
+    const newSubmission = new FormSubmission({ fullName, phone, email, address, message, });
 
     await newSubmission.save();
     res.status(201).json({ message: "Form submitted successfully", data: newSubmission });

@@ -1,15 +1,12 @@
 const mongoose = require("mongoose");
 
-// Helper function to calculate next payment date (5th of next month)
-function getNextFifthDate(previousDate) {
+// Helper function to calculate next payment date (10th of next month)
+function getNextTenthDate(previousDate) {
   const date = new Date(previousDate);
   date.setMonth(date.getMonth() + 1);
-  date.setDate(5);
+  date.setDate(10);
   return date;
 }
-
-
-
 
 const monthlyPayoutSchema = new mongoose.Schema(
   {
@@ -45,7 +42,7 @@ const monthlyPayoutSchema = new mongoose.Schema(
       type: String,
       required: true
     },
-    appreciatedValue: {  
+    appreciatedValue: {
       type: String,
     },
     payment_structure: [{
@@ -55,8 +52,8 @@ const monthlyPayoutSchema = new mongoose.Schema(
       },
       next_payment: {
         type: Date,
-        default: function() {
-          return getNextFifthDate(this.previous_payment || new Date());
+        default: function () {
+          return getNextTenthDate(this.previous_payment || new Date());
         }
       },
       paid_amount: {
@@ -91,27 +88,26 @@ const monthlyPayoutSchema = new mongoose.Schema(
 );
 
 // Pre-save middleware to initialize payment structure for 12 months
-monthlyPayoutSchema.pre('save', function(next) {
+monthlyPayoutSchema.pre('save', function (next) {
   if (this.isNew) {
     // Calculate appreciated value
     const baseAmount = Number(this.totalAmount.amount);
     const appreciationRate = Number(this.capitalAppreciation);
     this.appreciatedValue = String((baseAmount * appreciationRate / 100).toFixed(2));
-    
-    // Calculate monthly payment amount including taxes
 
-    const monthlyPayment = this.capitalAppreciation ? 
-    Math.ceil(((appreciationRate / 100) * baseAmount) / 12) : 0;
+    // Calculate monthly payment amount including taxes
+    const monthlyPayment = this.capitalAppreciation ?
+      Math.ceil(((appreciationRate / 100) * baseAmount) / 12) : 0;
 
     const startDate = new Date(this.startDate);
     let currentDate = new Date(startDate);
-    currentDate.setDate(5); // Set to 5th of the month
+    currentDate.setDate(10); // Set to 10th of the month
 
     // Initialize payment structure for 12 months
     this.payment_structure = Array.from({ length: 12 }, (_, index) => {
       const payment = {
         previous_payment: index === 0 ? null : new Date(currentDate),
-        next_payment: getNextFifthDate(currentDate),
+        next_payment: getNextTenthDate(currentDate),
         paid_amount: "0",
         expected_amount: monthlyPayment,
         status: "unpaid",
@@ -127,8 +123,8 @@ monthlyPayoutSchema.pre('save', function(next) {
   next();
 });
 
-// Rest of the methods remain the same
-monthlyPayoutSchema.methods.calculateNextPayout = function() {
+// Method to calculate the next unpaid expected amount
+monthlyPayoutSchema.methods.calculateNextPayout = function () {
   const currentPayment = this.payment_structure.find(p => p.status === "unpaid");
   if (currentPayment) {
     return currentPayment.expected_amount;
@@ -136,7 +132,8 @@ monthlyPayoutSchema.methods.calculateNextPayout = function() {
   return "0";
 };
 
-monthlyPayoutSchema.methods.markPaymentAsPaid = async function(paymentIndex, transactionDetails) {
+// Method to mark a payment as paid
+monthlyPayoutSchema.methods.markPaymentAsPaid = async function (paymentIndex, transactionDetails) {
   if (this.payment_structure[paymentIndex]) {
     const payment = this.payment_structure[paymentIndex];
     payment.status = "paid";
@@ -156,9 +153,10 @@ monthlyPayoutSchema.methods.markPaymentAsPaid = async function(paymentIndex, tra
   return false;
 };
 
-monthlyPayoutSchema.statics.getPendingPayments = async function() {
+// Static method to get pending payments (due on or before 10th of current month)
+monthlyPayoutSchema.statics.getPendingPayments = async function () {
   const currentDate = new Date();
-  currentDate.setDate(5);
+  currentDate.setDate(10);
 
   return this.find({
     isActive: "active",
@@ -173,7 +171,8 @@ monthlyPayoutSchema.statics.getPendingPayments = async function() {
   }).populate('user order');
 };
 
-monthlyPayoutSchema.statics.getUpcomingPayments = async function(userId) {
+// Static method to get upcoming payments for a user (sorted by next_payment date)
+monthlyPayoutSchema.statics.getUpcomingPayments = async function (userId) {
   const query = { isActive: "active" };
   if (userId) {
     query.user = userId;

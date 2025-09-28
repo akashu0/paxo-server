@@ -2,9 +2,8 @@
 const mongoose = require('mongoose');
 
 const formSubmissionSchema = new mongoose.Schema({
-  name: {
+  fullName: {
     type: String,
-    required: [true, 'Name is required']
   },
   email: {
     type: String,
@@ -13,11 +12,9 @@ const formSubmissionSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required']
   },
-  address: {
+  product: {
     type: String,
-    required: [true, 'Address is required']
   },
   interested: {
     type: String,
@@ -29,7 +26,6 @@ const formSubmissionSchema = new mongoose.Schema({
   },
   serviceType: {
     type: String,
-    required: [true, 'Service type is required'],
     enum: ['NiftiLand', 'NiftiRide']
   },
   createdAt: {
